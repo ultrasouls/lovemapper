@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl/mapbox';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import Map, { Marker, Popup, type MapRef } from 'react-map-gl/mapbox';
 import { createClient } from '@/lib/supabase/client';
 import { mapThumbnailUrl, fullResUrl } from '@/lib/cloudinary';
+import MapSearch from '@/components/map/MapSearch';
 import type { MemoryWithProfile } from '@/lib/types';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 export default function ExploreMap() {
+  const mapRef = useRef<MapRef>(null);
   const [memories, setMemories] = useState<MemoryWithProfile[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<MemoryWithProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,7 @@ export default function ExploreMap() {
   return (
     <div className="h-[calc(100vh-4rem)] relative">
       <Map
+        ref={mapRef}
         initialViewState={{ longitude: -40, latitude: 30, zoom: 2 }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
@@ -106,6 +109,11 @@ export default function ExploreMap() {
           </Popup>
         )}
       </Map>
+
+      {/* Location search */}
+      <MapSearch onSelect={(lng, lat) => {
+        mapRef.current?.flyTo({ center: [lng, lat], zoom: 12, duration: 2000 });
+      }} />
 
       {memories.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

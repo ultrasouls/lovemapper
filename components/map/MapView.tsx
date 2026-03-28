@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl/mapbox';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import Map, { Marker, Popup, type MapRef } from 'react-map-gl/mapbox';
 import { createClient } from '@/lib/supabase/client';
 import { mapThumbnailUrl } from '@/lib/cloudinary';
 import MemoryDetail from '@/components/memory/MemoryDetail';
+import MapSearch from '@/components/map/MapSearch';
 import type { Memory } from '@/lib/types';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 export default function MapView() {
+  const mapRef = useRef<MapRef>(null);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [detailMemory, setDetailMemory] = useState<Memory | null>(null);
@@ -44,6 +46,14 @@ export default function MapView() {
     setSelectedMemory(null);
   }, []);
 
+  const handleSearchSelect = useCallback((lng: number, lat: number, _placeName: string) => {
+    mapRef.current?.flyTo({
+      center: [lng, lat],
+      zoom: 12,
+      duration: 2000,
+    });
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
@@ -56,6 +66,7 @@ export default function MapView() {
     <>
       <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] relative">
         <Map
+          ref={mapRef}
           initialViewState={{
             longitude: memories[0]?.longitude || -98.5,
             latitude: memories[0]?.latitude || 39.8,
@@ -130,6 +141,9 @@ export default function MapView() {
             </Popup>
           )}
         </Map>
+
+        {/* Location search */}
+        <MapSearch onSelect={handleSearchSelect} />
 
         {/* Empty state overlay */}
         {memories.length === 0 && (
