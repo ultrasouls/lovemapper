@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import Map, { Marker, type MapMouseEvent } from 'react-map-gl/mapbox';
+import { useState, useCallback, useRef } from 'react';
+import Map, { Marker, type MapRef, type MapMouseEvent } from 'react-map-gl/mapbox';
+import MapSearch from '@/components/map/MapSearch';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface LocationPickerProps {
@@ -11,6 +12,7 @@ interface LocationPickerProps {
 }
 
 export default function LocationPicker({ initialLat, initialLng, onLocationSet }: LocationPickerProps) {
+  const mapRef = useRef<MapRef>(null);
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
     initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
   );
@@ -20,10 +22,21 @@ export default function LocationPicker({ initialLat, initialLng, onLocationSet }
     setMarker({ lat, lng });
   }, []);
 
+  const handleSearchSelect = useCallback((lng: number, lat: number, _placeName: string) => {
+    // Fly to the searched location and drop a pin there
+    mapRef.current?.flyTo({
+      center: [lng, lat],
+      zoom: 14,
+      duration: 1500,
+    });
+    setMarker({ lat, lng });
+  }, []);
+
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl overflow-hidden border border-gray-200" style={{ height: '400px' }}>
+      <div className="rounded-2xl overflow-hidden border border-gray-200 relative" style={{ height: '400px' }}>
         <Map
+          ref={mapRef}
           initialViewState={{
             longitude: initialLng || -98.5,
             latitude: initialLat || 39.8,
@@ -45,6 +58,9 @@ export default function LocationPicker({ initialLat, initialLng, onLocationSet }
             </Marker>
           )}
         </Map>
+
+        {/* Location search overlay */}
+        <MapSearch onSelect={handleSearchSelect} />
       </div>
 
       {marker && (
